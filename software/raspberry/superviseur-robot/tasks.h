@@ -64,6 +64,8 @@ private:
     /**********************************************************************/
     ComMonitor monitor;
     ComRobot robot;
+    Camera camera;
+    bool statusCamera = false ;
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
     
@@ -77,7 +79,10 @@ private:
     RT_TASK th_startRobot;
     RT_TASK th_move;
     RT_TASK th_getBattery;
-    
+    RT_TASK th_openCamera;
+    RT_TASK th_closeCamera;
+    RT_TASK th_sendImageTask;
+    RT_TASK th_findArenaCamera;
     /**********************************************************************/
     /* Mutex                                                              */
     /**********************************************************************/
@@ -85,6 +90,7 @@ private:
     RT_MUTEX mutex_robot;
     RT_MUTEX mutex_robotStarted;
     RT_MUTEX mutex_move;
+    RT_MUTEX mutex_camera;
 
     /**********************************************************************/
     /* Semaphores                                                         */
@@ -93,6 +99,11 @@ private:
     RT_SEM sem_openComRobot;
     RT_SEM sem_serverOk;
     RT_SEM sem_startRobot;
+    RT_SEM sem_startCamera;
+    RT_SEM sem_closeCamera;
+    RT_SEM sem_sendImageTask;
+    RT_SEM sem_findArenaCamera;
+
 
     /**********************************************************************/
     /* Message queues                                                     */
@@ -141,7 +152,23 @@ private:
     /**
     * @brief Thread handling control of the robot.
     */
-    void Tasks::OpenCamera(void *arg);
+    void OpenCamera(void *arg);
+    
+    /**
+    * @brief Thread handling control of the robot.
+    */
+    void CloseCamera(void *arg);
+    
+     /**
+    * @brief Thread handling control of the robot.
+    */
+    void SendImageTask(void *arg);
+    
+    /**
+    * @brief Thread handling control of the robot.
+    */
+    void FindArenaCamera(void *arg);
+    
     
     /**********************************************************************/
     /* Queue services                                                     */
