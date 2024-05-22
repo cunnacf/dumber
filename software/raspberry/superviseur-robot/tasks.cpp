@@ -19,17 +19,17 @@
 #include <stdexcept>
 
 // Déclaration des priorités des taches
-#define PRIORITY_TSERVER 50
-#define PRIORITY_TOPENCOMROBOT 40
-#define PRIORITY_TMOVE 33
-#define PRIORITY_TSENDTOMON 35
-#define PRIORITY_TRECEIVEFROMMON 34
-#define PRIORITY_TSTARTROBOT 33
-#define PRIORITY_TCAMERA 30
-#define PRIORITY_TCAMERA_OFF 32
-#define PRIORITY_TCAMERA_ON 31
-#define PRIORITY_TBATTERY 33
-#define PRIORITY_TCONNEXIONTOROBOTLOST 41
+#define PRIORITY_TSERVER   50 //20
+#define PRIORITY_TOPENCOMROBOT 40 // 25
+#define PRIORITY_TMOVE 37  //30
+#define PRIORITY_TSENDTOMON 35 //32
+#define PRIORITY_TRECEIVEFROMMON 34 //35
+#define PRIORITY_TSTARTROBOT 33 //37
+#define PRIORITY_TCAMERA 30 //40
+#define PRIORITY_TCAMERA_OFF 32 //45
+#define PRIORITY_TCAMERA_ON 31 //46
+#define PRIORITY_TBATTERY 33 //48
+#define PRIORITY_TCONNEXIONTOROBOTLOST 41 //41
 
 /*
  * Some remarks:
@@ -106,10 +106,7 @@ void Tasks::Init() {
         cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
     }
-    if (err = rt_sem_create(&sem_startBattery, NULL, 0, S_FIFO)) {
-        cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
-        exit(EXIT_FAILURE);
-    }
+  
     if (err = rt_sem_create(&sem_startCamera, NULL, 0, S_FIFO)) {
         cerr << "Error semaphore create: " << strerror(-err) << endl << flush;
         exit(EXIT_FAILURE);
@@ -583,7 +580,9 @@ void Tasks::GetBatteryTask(void *arg) {
             rt_mutex_acquire(&mutex_robotStarted, TM_INFINITE);
             rs = robotStarted;
             rt_mutex_release(&mutex_robotStarted);
+            
             if(rs==1){
+                
                 rt_mutex_acquire(&mutex_robot, TM_INFINITE);
                 msgbat = (MessageBattery*)robot.Write(new Message(MESSAGE_ROBOT_BATTERY_GET)); 
                 cout << msgbat->ToString()<<endl <<flush;
@@ -598,6 +597,8 @@ void Tasks::GetBatteryTask(void *arg) {
 */
 void Tasks::OpenCamera(void *arg) {
     
+    Message *msgCam;
+    
      cout << "Start " << __PRETTY_FUNCTION__ << endl << flush;
     // Synchronization barrier (waiting that all tasks are starting)
     rt_sem_p(&sem_barrier, TM_INFINITE);
@@ -606,7 +607,6 @@ void Tasks::OpenCamera(void *arg) {
     /* The task starts here                                                               */
     /**************************************************************************************/
     
-    Message *msgCam;
     while(1){
         rt_sem_p(&sem_startCamera, TM_INFINITE);
         rt_mutex_acquire(&mutex_camera, TM_INFINITE);
@@ -623,8 +623,9 @@ void Tasks::OpenCamera(void *arg) {
             msgCam = new Message(MESSAGE_ANSWER_NACK);
             statusCamera=false;
         }
-        WriteInQueue(&q_messageToMon, msgCam);
         rt_mutex_release(&mutex_camera);
+        WriteInQueue(&q_messageToMon, msgCam);
+        
     }
 }
 
@@ -652,11 +653,10 @@ void Tasks::CloseCamera(void *arg) {
         cout << "Camera closed successfully" << endl << flush;
         statusCamera=false;
         rt_sem_v(&sem_stopSendImageTask);
-        msgCam = new Message(MESSAGE_ANSWER_ACK);
-        WriteInQueue(&q_messageToMon, msgCam); 
-        
-               
+        msgCam = new Message(MESSAGE_ANSWER_ACK); 
         rt_mutex_release(&mutex_camera);
+        
+        WriteInQueue(&q_messageToMon, msgCam); 
             
      }
 }
