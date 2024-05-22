@@ -65,16 +65,21 @@ private:
     ComMonitor monitor;
     ComRobot robot;
     Camera camera;
-    bool statusCamera = false ;
+    
+    bool statusCamera = false;
     int robotStarted = 0;
     int move = MESSAGE_ROBOT_STOP;
-    
+    int battery = BATTERY_UNKNOWN;
+    bool arenaOK=0;
+    bool getPosition=false;
+    Arena arenaOKByUser;
     /**********************************************************************/
     /* Tasks                                                              */
     /**********************************************************************/
     RT_TASK th_server;
     RT_TASK th_sendToMon;
     RT_TASK th_receiveFromMon;
+    RT_TASK th_receiveFromRob;
     RT_TASK th_openComRobot;
     RT_TASK th_startRobot;
     RT_TASK th_move;
@@ -83,6 +88,7 @@ private:
     RT_TASK th_closeCamera;
     RT_TASK th_sendImageTask;
     RT_TASK th_findArenaCamera;
+    RT_TASK th_connexionRobotLost;
     /**********************************************************************/
     /* Mutex                                                              */
     /**********************************************************************/
@@ -91,7 +97,6 @@ private:
     RT_MUTEX mutex_robotStarted;
     RT_MUTEX mutex_move;
     RT_MUTEX mutex_camera;
-
     /**********************************************************************/
     /* Semaphores                                                         */
     /**********************************************************************/
@@ -102,8 +107,9 @@ private:
     RT_SEM sem_startCamera;
     RT_SEM sem_closeCamera;
     RT_SEM sem_sendImageTask;
+    RT_SEM sem_stopSendImageTask;
     RT_SEM sem_findArenaCamera;
-
+    RT_SEM sem_confirmFindArenaCamera;
 
     /**********************************************************************/
     /* Message queues                                                     */
@@ -114,10 +120,13 @@ private:
     /**********************************************************************/
     /* Tasks' functions                                                   */
     /**********************************************************************/
+    /**********************************************************************/
+                
     /**
      * @brief Thread handling server communication with the monitor.
      */
     void ServerTask(void *arg);
+    
      
     /**
      * @brief Thread sending data to monitor.
@@ -128,7 +137,12 @@ private:
      * @brief Thread receiving data from monitor.
      */
     void ReceiveFromMonTask(void *arg);
-    
+
+      /**
+     * @brief Thread receiving data from robot.
+     */
+    void ReceiveFromRobTask(void *arg);
+
     /**
      * @brief Thread opening communication with the robot.
      */
@@ -143,36 +157,41 @@ private:
      * @brief Thread handling control of the robot.
      */
     void MoveTask(void *arg);
-    
+
     /**
-     * @brief Thread handling the level of the battery.
+     * @brief Get battery level from robot and send it periodically to monitor.
      */
     void GetBatteryTask(void *arg);
-    
+
     /**
-    * @brief Thread handling control of the robot.
-    */
+     * @brief Thread handling opening of the camera.
+     */
     void OpenCamera(void *arg);
-    
+
     /**
-    * @brief Thread handling control of the robot.
-    */
+     * @brief Thread handling closing of the camera.
+     */
     void CloseCamera(void *arg);
     
-     /**
-    * @brief Thread handling control of the robot.
-    */
-    void SendImageTask(void *arg);
-    
     /**
-    * @brief Thread handling control of the robot.
-    */
+     * @brief Thread handling the send of image to the monitor.
+     */
+    void SendImageTask(void *arg);
+
+    /**
+     * @brief Thread handling the search of the arena.
+     */
     void FindArenaCamera(void *arg);
     
+    /**
+     * @brief Thread handling the loss of connexion with the robot.
+     */
+    void ConnexionRobotLost(void *arg);
     
     /**********************************************************************/
     /* Queue services                                                     */
     /**********************************************************************/
+    
     /**
      * Write a message in a given queue
      * @param queue Queue identifier
@@ -186,9 +205,9 @@ private:
      * @return Message read
      */
     Message *ReadInQueue(RT_QUEUE *queue);
-    
-};
 
+
+};
 
 #endif // __TASKS_H__ 
 
